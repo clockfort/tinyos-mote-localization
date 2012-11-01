@@ -43,8 +43,9 @@ module RssiBaseC {
   uses interface CC2420Packet;
 #elif defined(TDA5250_MESSAGE_H)
   uses interface Tda5250Packet;    
-#else
+#elif defined(PLATFORM_IRIS)
   uses interface PacketField<uint8_t> as PacketRSSI;
+#else
 #endif 
 } implementation {
 
