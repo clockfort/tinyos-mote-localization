@@ -145,6 +145,22 @@ public static void tick(){
         }
 }
 
+public static void bestGuess(){
+	double max_probability=0;
+	Rectangle2D best = new Rectangle2D.Double(0,0,0,0);
+
+        Iterator<Map.Entry<Rectangle2D, Double>> entries = grid.entrySet().iterator();
+        while(entries.hasNext()){
+                Map.Entry<Rectangle2D, Double> entry = entries.next();
+                square = entry.getKey();
+                probability = entry.getValue();
+		if(probability>max_probability){
+			max_probability=probability;
+			best = square;
+		}
+        }
+	System.err.println("Best guess is currently: (" + square.getX +", "+ square.getY +") @ P="+max_probability);
+}
 /**
  * This really out to be an exponential, but real-life testing
  * (these are regression-based values from readings/measurements we took)
@@ -152,8 +168,8 @@ public static void tick(){
  * As a result, I've approximated with a piecewise function of varying linear regressions.
  **/
 public static double rssiConvert(double rssi){
-	rssi_delta_from_noise_floor = 52.506;
-	rssi_delta = abs(rssi)-rssi_delta_from_noise_floor;
+	double rssi_delta_from_noise_floor = 52.506;
+	double rssi_delta = abs(rssi)-rssi_delta_from_noise_floor;
 	if(rssi_delta<0){
 		if(rssi_delta<-2.0){ //if we're less than a foot off, whatever. I don't need to hear about it.
 			System.err.printLn("WARNING: Noise floor was lower than expected. Difference is "+rssi_delta+" dBm!");
@@ -179,7 +195,7 @@ public static double rssiConvert(double rssi){
 }
 
 public static void addSensorReading(double x, double y, double rssiRangeInches){
-	variance = gridSizeInches/2;
+	double variance = gridSizeInches/2;
         Shape minCircle = new Ellipse2D.Double(x,y, rssiRangeInches-variance, rssiRangeInches-variance);
         Shape maxCircle = new Ellipse2D.Double(x,y, rssiRangeInches+variance, rssiRangeInches+variance);
 
@@ -189,8 +205,8 @@ public static void addSensorReading(double x, double y, double rssiRangeInches){
         Iterator<Map.Entry<Rectangle2D, Double>> entries =grid.entrySet().iterator();
         while(entries.hasNext()){
                 Map.Entry<Rectangle2D, Double> entry = entries.next();
-                square = entry.getKey();
-                probability = entry.getValue();
+                Rectangle2D square = entry.getKey();
+                double probability = entry.getValue();
                 if(rangeDonut.intersects(square)){
                         grid.put(square, probability+1);
                 }
