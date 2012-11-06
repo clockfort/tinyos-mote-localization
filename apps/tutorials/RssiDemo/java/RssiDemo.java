@@ -53,7 +53,7 @@ import net.tinyos.util.*;
 public class RssiDemo implements MessageListener {
 
   private MoteIF moteIF;
-  
+   
   public RssiDemo(MoteIF moteIF) {
     this.moteIF = moteIF;
     this.moteIF.registerListener(new RssiMsg(), this);
@@ -66,8 +66,12 @@ public class RssiDemo implements MessageListener {
     double rssi_dbm = (-51.3*vrssi-49.2);
 
     int source = message.getSerialPacket().get_header_src();
-    System.out.println("msg from node " + source + 
-		       ": Rssi = " +  msg.get_rssi() +" Really: " + rssi_dbm + " dBm");
+    System.err.println("Rx packet, node=" + source + 
+		       " rssi_raw= " +  msg.get_rssi() +" rssi_dbm: " + rssi_dbm + " dBm");
+  }
+  
+  public static void dBmToInches(double rssi){
+	return Math.Pow(-23.9915*rssi,5) - Math.Pow(3.7778*rssi,4) + Math.Pow(66.9918*rssi,3) + Math.Pow(42.3858,2) - 22.8920*rssi - 70.0603;
   }
   
   private static void usage() {
