@@ -20,7 +20,7 @@ public static void tick(){
                 Map.Entry<Rectangle2D, Integer> entry = entries.next();
                 square = entry.getKey();
                 probability = entry.getValue();
-                grid.put(square, probability/0.5); //probability decay with one half life per tick
+                grid.put(square, probability*0.5); //probability decay with one half life per tick
         }
 
 }
