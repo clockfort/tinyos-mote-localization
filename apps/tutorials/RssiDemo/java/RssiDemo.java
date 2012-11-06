@@ -56,6 +56,15 @@ import net.tinyos.util.*;
 
 import java.util.*;
 
+public class Tuple<Left, Right> { 
+  public final Left left; 
+  public final Right right; 
+  public Tuple(Left left, Right right) { 
+    this.left = left; 
+    this.right = right; 
+  } 
+} 
+
 public class RssiDemo implements MessageListener {
 
   private MoteIF moteIF;
@@ -68,6 +77,18 @@ public class RssiDemo implements MessageListener {
 
   int readings_since_tick = 0;
 
+  public static void askSensorLocation(int source){
+   InputStreamReader istream = new InputStreamReader(System.in) ;
+   BufferedReader bufRead = new BufferedReader(istream);
+   System.out.print("Enter x coordinate for sensor #" + source + ": ");
+   String strX = bufRead.readLine();
+   double x = Double.parseDouble(strX);
+   System.out.print("\nEnter y coordinate for sensor #" + source +": ");
+   String strY = bufRead.readLine();
+   double y = Double.parseDouble(strY);
+   nodeLocation(source, new Tuple<Double,Double>(x,y));
+  }
+
   public static void updateSensor(int source, double rssi_dbm){
     sensorData.put(source, rssi_dbm);
     if(readings_since_tick>4){ //kind of arbitrary; but I'll have around 4 nodes
@@ -77,8 +98,8 @@ public class RssiDemo implements MessageListener {
         Map.Entry<Integer, Double> entry = entries.next();
         int source = entry.getKey();
         double irssi = entry.getValue();
-        double x = nodeLocation.get(source).get(0);
-	double y = nodeLocation.get(source).get(1);
+        double x = nodeLocation.get(source).left;
+	double y = nodeLocation.get(source).right;
 
         addSensorReading(x,y,rssiConvert(rssi));         
       }
@@ -112,7 +133,7 @@ public class RssiDemo implements MessageListener {
     grid = new HashMap<Rectangle2D, Double>();
     for(x=0; x<=roomSizeInchesX; x+=gridSizeInches){
       for(y=0; y+=gridSizeInches; y<=roomSizeInchesY){
-        grid.put(new Rectangle2D.Float(x,y,gridSizeInches, gridSizeInches), 0);
+        grid.put(new Rectangle2D.Double(x,y,gridSizeInches, gridSizeInches), 0);
       }
     }
   }
