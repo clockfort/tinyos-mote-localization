@@ -54,28 +54,20 @@ import net.tinyos.message.*;
 import net.tinyos.packet.*;
 import net.tinyos.util.*;
 
-import java.util.*;
-
-public class Tuple<Left, Right> { 
-  public final Left left; 
-  public final Right right; 
-  public Tuple(Left left, Right right) { 
-    this.left = left; 
-    this.right = right; 
-  } 
-} 
+import java.util.*; //HashMap et al
+import java.awt.*; //shapes
 
 public class RssiDemo implements MessageListener {
 
   private MoteIF moteIF;
-  int gridSizeInches = 6;
-  int roomSizeInchesX = 720;
-  int roomSizeInchesY = 240;
-  HashMap<Rectangle2D, Double> grid;
-  HashMap<Integer, Double> sensorData; //<source_node_id, rssi_dBm>
-  HashMap<Integer, Tuple<Double,Double>> nodeLocation; //<source_node_id, (x,y)>
+  static int gridSizeInches = 6;
+  static int roomSizeInchesX = 720;
+  static int roomSizeInchesY = 240;
+  static HashMap<Rectangle2D, Double> grid;
+  static HashMap<Integer, Double> sensorData; //<source_node_id, rssi_dBm>
+  static HashMap<Integer, Tuple<Double,Double>> nodeLocation; //<source_node_id, (x,y)>
 
-  int readings_since_tick = 0;
+  static int readings_since_tick = 0;
 
   public static void askSensorLocation(int source){
    InputStreamReader istream = new InputStreamReader(System.in) ;
@@ -106,7 +98,6 @@ public class RssiDemo implements MessageListener {
     }    
   }
 
-  public static void 
   public RssiDemo(MoteIF moteIF) {
     this.moteIF = moteIF;
     this.moteIF.registerListener(new RssiMsg(), this);
@@ -132,7 +123,7 @@ public class RssiDemo implements MessageListener {
   public static void initializeGrid(){
     grid = new HashMap<Rectangle2D, Double>();
     for(x=0; x<=roomSizeInchesX; x+=gridSizeInches){
-      for(y=0; y+=gridSizeInches; y<=roomSizeInchesY){
+      for(y=0; y<=roomSizeInchesY; y+=gridSizeInches){
         grid.put(new Rectangle2D.Double(x,y,gridSizeInches, gridSizeInches), 0);
       }
     }
@@ -177,7 +168,7 @@ public static double rssiConvert(double rssi){
 		return ((72.0-36.0)/12.4568404797)*rssi_delta + 36;
 	}
 	else{ //72-144(-infinity) inches
-		return ((144.0-72.0)/23.1004354941*rssi_delta + 72;
+		return ((144.0-72.0)/23.1004354941)*rssi_delta + 72;
 	}
 	
 }
