@@ -55,7 +55,9 @@ import net.tinyos.packet.*;
 import net.tinyos.util.*;
 
 import java.util.*; //HashMap et al
-import java.awt.*; //shapes
+import java.awt.*; //Shapes et al
+import java.awt.geom.*; //Ellipse2D
+import java.io.*; //InputStream et al
 
 public class RssiDemo implements MessageListener {
 
@@ -81,6 +83,10 @@ public class RssiDemo implements MessageListener {
    nodeLocation(source, new Tuple<Double,Double>(x,y));
   }
 
+  public static void checkExistance(int source){
+    if(!nodeLocation.containsKey(source))
+      askSensorLocation(source);
+  }
   public static void updateSensor(int source, double rssi_dbm){
     sensorData.put(source, rssi_dbm);
     if(readings_since_tick>4){ //kind of arbitrary; but I'll have around 4 nodes
@@ -88,11 +94,10 @@ public class RssiDemo implements MessageListener {
       Iterator<Map.Entry<Integer, Double>> entries = grid.entrySet().iterator();
       while(entries.hasNext()){
         Map.Entry<Integer, Double> entry = entries.next();
-        int source = entry.getKey();
         double irssi = entry.getValue();
+        checkExistance(source);
         double x = nodeLocation.get(source).left;
 	double y = nodeLocation.get(source).right;
-
         addSensorReading(x,y,rssiConvert(rssi));         
       }
     }    
@@ -131,9 +136,9 @@ public class RssiDemo implements MessageListener {
 
 public static void tick(){
         readings_since_tick=0;
-        Iterator<Map.Entry<Rectangle2D, Integer>> entries = grid.entrySet().iterator();
+        Iterator<Map.Entry<Rectangle2D, Double>> entries = grid.entrySet().iterator();
         while(entries.hasNext()){
-                Map.Entry<Rectangle2D, Integer> entry = entries.next();
+                Map.Entry<Rectangle2D, Double> entry = entries.next();
                 square = entry.getKey();
                 probability = entry.getValue();
                 grid.put(square, probability*0.5); //probability decay with one half life per tick
@@ -181,9 +186,9 @@ public static void addSensorReading(double x, double y, double rssiRangeInches){
         Area rangeDonut = new Area(maxCircle);
         rangeDonut.subtract(new Area(minCircle));
 
-        Iterator<Map.Entry<Rectangle2D, Integer>> entries =grid.entrySet().iterator();
+        Iterator<Map.Entry<Rectangle2D, Double>> entries =grid.entrySet().iterator();
         while(entries.hasNext()){
-                Map.Entry<Rectangle2D, Integer> entry = entries.next();
+                Map.Entry<Rectangle2D, Double> entry = entries.next();
                 square = entry.getKey();
                 probability = entry.getValue();
                 if(rangeDonut.intersects(square)){
