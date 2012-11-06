@@ -143,9 +143,10 @@ public static void tick(){
                 probability = entry.getValue();
                 grid.put(square, probability*0.5); //probability decay with one half life per tick
         }
+	printBestGuess();
 }
 
-public static void bestGuess(){
+public static void printBestGuess(){
 	double max_probability=0;
 	Rectangle2D best = new Rectangle2D.Double(0,0,0,0);
 
