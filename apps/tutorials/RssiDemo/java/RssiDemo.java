@@ -182,10 +182,10 @@ public static double rssiConvert(double rssi){
 	
 }
 
-public static void addSensorReading(x,y,rssiRangeInches){
+public static void addSensorReading(double x, double y, double rssiRangeInches){
 	variance = gridSizeInches/2;
-        Shape minCircle = new Ellipse2D.Float(x,y, rssiRangeInches-variance, rssiRangeInches-variance));
-        Shape maxCircle = new Ellipse2D.Float(x,y, rssiRangeInches+variance, rssiRangeInches+variance);
+        Shape minCircle = new Ellipse2D.Double(x,y, rssiRangeInches-variance, rssiRangeInches-variance);
+        Shape maxCircle = new Ellipse2D.Double(x,y, rssiRangeInches+variance, rssiRangeInches+variance);
 
         Area rangeDonut = new Area(maxCircle);
         rangeDonut.subtract(new Area(minCircle));
