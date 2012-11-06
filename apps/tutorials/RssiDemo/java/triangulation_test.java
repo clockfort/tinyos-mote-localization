@@ -4,9 +4,9 @@ int gridSizeInches = 6;
 int roomSizeInchesX = 720;
 int roomSizeInchesY = 240;
 
-HashMap<Rectangle2D, Integer> grid;
+HashMap<Rectangle2D, Double> grid;
 public static void initializeGrid(){
-	grid = new HashMap<Rectangle2D, Integer>();
+	grid = new HashMap<Rectangle2D, Double>();
 	for(x=0; x<=roomSizeInchesX; x+=gridSizeInches){
 		for(y=0; y+=gridSizeInches; y<=roomSizeInchesY){
 			grid.put(new Rectangle2D.Float(x,y,gridSizeInches, gridSizeInches), 0);
@@ -14,6 +14,16 @@ public static void initializeGrid(){
 	}
 }
 
+public static void tick(){
+        Iterator<Map.Entry<Rectangle2D, Integer>> entries =grid.entrySet().iterator();
+        while(entries.hasNext()){
+                Map.Entry<Rectangle2D, Integer> entry = entries.next();
+                square = entry.getKey();
+                probability = entry.getValue();
+                grid.put(square, probability/0.5); //probability decay with one half life per tick
+        }
+
+}
 public static void addSensorReading(x,y,rssiRangeInches){
 	variance = gridSizeInches/2;
         Shape minCircle = new Ellipse2D.Float(x,y, rssiRangeInches-variance, rssiRangeInches-variance));
@@ -38,5 +48,7 @@ public static void main(){
 	
 	addSensorReading(0,0, 24);
 	addSensorReading(10,20, 36);
+	tick();
+	addSensorReading(0,0, 25);
 }
 
