@@ -59,19 +59,33 @@ import java.awt.*; //Shapes et al
 import java.awt.geom.*; //Ellipse2D
 import java.io.*; //InputStream et al
 
+import javax.swing.*; //JFrame for GUI
+
 public class RssiDemo implements MessageListener {
 
   private MoteIF moteIF;
   static int gridSizeInches = 6;
-  static int roomSizeInchesX = 720;
+  static int roomSizeInchesX = 360;
   static int roomSizeInchesY = 240;
-  static HashMap<Rectangle2D, Double> grid;
-  static HashMap<Integer, Double> sensorData; //<source_node_id, rssi_dBm>
-  static HashMap<Integer, Tuple<Double,Double>> nodeLocation; //<source_node_id, (x,y)>
+  private HashMap<Rectangle2D, Double> grid;
+  private HashMap<Integer, Double> sensorData; //<source_node_id, rssi_dBm>
+  private HashMap<Integer, Tuple<Double,Double>> nodeLocation; //<source_node_id, (x,y)>
 
-  static int readings_since_tick = 0;
-
-  public static void askSensorLocation(int source){
+  private int readings_since_tick = 0;
+	
+	private JPanel canvas; //GUI
+	
+	private class Tuple<X, Y> {
+		public final X x; 
+		public final Y y; 
+		public Tuple(X x, Y y) { 
+			this.x = x; 
+			this.y = y; 
+		}
+	}
+	
+  public void askSensorLocation(int source){
+	try{
    InputStreamReader istream = new InputStreamReader(System.in) ;
    BufferedReader bufRead = new BufferedReader(istream);
    System.out.print("Enter x coordinate for sensor #" + source + ": ");
@@ -80,24 +94,27 @@ public class RssiDemo implements MessageListener {
    System.out.print("\nEnter y coordinate for sensor #" + source +": ");
    String strY = bufRead.readLine();
    double y = Double.parseDouble(strY);
-   nodeLocation(source, new Tuple<Double,Double>(x,y));
+   nodeLocation.put(source, new Tuple<Double,Double>(x,y));
+	} catch(IOException e){
+		System.out.println(e.getMessage());
+	}
   }
 
-  public static void checkExistance(int source){
+  public void checkExistance(int source){
     if(!nodeLocation.containsKey(source))
       askSensorLocation(source);
   }
-  public static void updateSensor(int source, double rssi_dbm){
+  public void updateSensor(int source, double rssi_dbm){
     sensorData.put(source, rssi_dbm);
     if(readings_since_tick>4){ //kind of arbitrary; but I'll have around 4 nodes
       tick();
-      Iterator<Map.Entry<Integer, Double>> entries = grid.entrySet().iterator();
+      Iterator<Map.Entry<Integer, Double>> entries = sensorData.entrySet().iterator();
       while(entries.hasNext()){
         Map.Entry<Integer, Double> entry = entries.next();
-        double irssi = entry.getValue();
+        double rssi = entry.getValue();
         checkExistance(source);
-        double x = nodeLocation.get(source).left;
-	double y = nodeLocation.get(source).right;
+        double x = nodeLocation.get(source).x;
+	double y = nodeLocation.get(source).y;
         addSensorReading(x,y,rssiConvert(rssi));         
       }
     }    
@@ -106,6 +123,34 @@ public class RssiDemo implements MessageListener {
   public RssiDemo(MoteIF moteIF) {
     this.moteIF = moteIF;
     this.moteIF.registerListener(new RssiMsg(), this);
+	
+	initializeGrid();
+	
+	/*
+	 * GUI
+	 */
+	JFrame frame = new JFrame();
+	class DrawPanel extends JPanel {
+		public void paintComponent(Graphics g) {
+			g.fillRect(0, 0, 360, 240);
+		}
+	}
+	//Canvas
+	canvas = new DrawPanel();
+	canvas.setPreferredSize(new Dimension(360,240));
+	frame.add(canvas);
+	
+	//Frame Properties
+	frame.setTitle("Localization");
+	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	frame.pack();
+	frame.setLocationRelativeTo(null);
+
+	frame.setVisible(true);
+	
+	/*
+	 * End GUI
+	 */
   }
     
   public void messageReceived(int to, Message message) {
@@ -125,16 +170,19 @@ public class RssiDemo implements MessageListener {
     System.err.println("usage: RssiDemo [-comm <source>]");
   }
   
-  public static void initializeGrid(){
+  public void initializeGrid(){
     grid = new HashMap<Rectangle2D, Double>();
-    for(x=0; x<=roomSizeInchesX; x+=gridSizeInches){
-      for(y=0; y<=roomSizeInchesY; y+=gridSizeInches){
-        grid.put(new Rectangle2D.Double(x,y,gridSizeInches, gridSizeInches), 0);
+    for(int x=0; x<=roomSizeInchesX; x+=gridSizeInches){
+      for(int y=0; y<=roomSizeInchesY; y+=gridSizeInches){
+        grid.put(new Rectangle2D.Double(x,y,gridSizeInches, gridSizeInches), 0.0);
       }
     }
   }
 
-public static void tick(){
+public void tick(){
+		Rectangle2D square;
+		double probability;
+		
         readings_since_tick=0;
         Iterator<Map.Entry<Rectangle2D, Double>> entries = grid.entrySet().iterator();
         while(entries.hasNext()){
@@ -142,11 +190,18 @@ public static void tick(){
                 square = entry.getKey();
                 probability = entry.getValue();
                 grid.put(square, probability*0.5); //probability decay with one half life per tick
+				
+				//Drawing on GUI
+				Graphics2D g2 = (Graphics2D) canvas.getGraphics();
+				g2.fill(square);
         }
 	printBestGuess();
 }
 
-public static void printBestGuess(){
+public void printBestGuess(){
+	Rectangle2D square = new Rectangle2D.Double(0,0,0,0);
+	double probability;
+	
 	double max_probability=0;
 	Rectangle2D best = new Rectangle2D.Double(0,0,0,0);
 
@@ -160,20 +215,20 @@ public static void printBestGuess(){
 			best = square;
 		}
         }
-	System.err.println("Best guess is currently: (" + square.getX +", "+ square.getY +") @ P="+max_probability);
+	System.err.println("Best guess is currently: (" + square.getX() +", "+ square.getY() +") @ P="+max_probability);
 }
 /**
- * This really out to be an exponential, but real-life testing
+ * This really ought to be an exponential, but real-life testing
  * (these are regression-based values from readings/measurements we took)
  * results in a curve that is too wonky to fit with any sane exponential or even 5-power polynomial.
  * As a result, I've approximated with a piecewise function of varying linear regressions.
  **/
-public static double rssiConvert(double rssi){
+public double rssiConvert(double rssi){
 	double rssi_delta_from_noise_floor = 52.506;
-	double rssi_delta = abs(rssi)-rssi_delta_from_noise_floor;
+	double rssi_delta = Math.abs(rssi)-rssi_delta_from_noise_floor;
 	if(rssi_delta<0){
 		if(rssi_delta<-2.0){ //if we're less than a foot off, whatever. I don't need to hear about it.
-			System.err.printLn("WARNING: Noise floor was lower than expected. Difference is "+rssi_delta+" dBm!");
+			System.err.println("WARNING: Noise floor was lower than expected. Difference is "+rssi_delta+" dBm!");
 		}
 		rssi_delta=0; //continue on, assuming we're right right next to the receiver
 	}
@@ -192,10 +247,10 @@ public static double rssiConvert(double rssi){
 	else{ //72-144(-infinity) inches
 		return ((144.0-72.0)/23.1004354941)*rssi_delta + 72;
 	}
-	
+
 }
 
-public static void addSensorReading(double x, double y, double rssiRangeInches){
+public void addSensorReading(double x, double y, double rssiRangeInches){
 	double variance = gridSizeInches/2;
         Shape minCircle = new Ellipse2D.Double(x,y, rssiRangeInches-variance, rssiRangeInches-variance);
         Shape maxCircle = new Ellipse2D.Double(x,y, rssiRangeInches+variance, rssiRangeInches+variance);
@@ -236,7 +291,7 @@ public static void addSensorReading(double x, double y, double rssiRangeInches){
     else {
       phoenix = BuildSource.makePhoenix(source, PrintStreamMessenger.err);
     }
-    initializeGrid();
+    //initializeGrid();
     MoteIF mif = new MoteIF(phoenix);
     RssiDemo serial = new RssiDemo(mif);
   }
