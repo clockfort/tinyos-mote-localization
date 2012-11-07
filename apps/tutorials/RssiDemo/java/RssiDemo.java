@@ -68,8 +68,8 @@ public class RssiDemo implements MessageListener {
   static int roomSizeInchesX = 360;
   static int roomSizeInchesY = 240;
   private HashMap<Rectangle2D, Double> grid;
-  private HashMap<Integer, Double> sensorData; //<source_node_id, rssi_dBm>
-  private HashMap<Integer, Tuple<Double,Double>> nodeLocation; //<source_node_id, (x,y)>
+  private HashMap<Integer, Double> sensorData = new HashMap<Integer, Double>(); //<source_node_id, rssi_dBm>
+  private HashMap<Integer, Tuple<Double,Double>> nodeLocation = new HashMap<Integer, Tuple<Double,Double>>(); //<source_node_id, (x,y)>
 
   private int readings_since_tick = 0;
 	
@@ -100,19 +100,22 @@ public class RssiDemo implements MessageListener {
 	}
   }
 
-  public void checkExistance(int source){
+  public void checkExistence(int source){
     if(!nodeLocation.containsKey(source))
       askSensorLocation(source);
   }
+
   public void updateSensor(int source, double rssi_dbm){
+    checkExistence(source);
     sensorData.put(source, rssi_dbm);
+    readings_since_tick++;
     if(readings_since_tick>4){ //kind of arbitrary; but I'll have around 4 nodes
       tick();
       Iterator<Map.Entry<Integer, Double>> entries = sensorData.entrySet().iterator();
       while(entries.hasNext()){
         Map.Entry<Integer, Double> entry = entries.next();
         double rssi = entry.getValue();
-        checkExistance(source);
+        checkExistence(source);
         double x = nodeLocation.get(source).x;
 	double y = nodeLocation.get(source).y;
         addSensorReading(x,y,rssiConvert(rssi));         
@@ -180,25 +183,29 @@ public class RssiDemo implements MessageListener {
   }
 
 public void tick(){
+	System.out.println("Tick!");
 		Rectangle2D square;
 		double probability;
 		
         readings_since_tick=0;
         Iterator<Map.Entry<Rectangle2D, Double>> entries = grid.entrySet().iterator();
-        while(entries.hasNext()){
+        Graphics2D g2 = (Graphics2D) canvas.getGraphics();
+	//g2.setColor(Color.red);
+	while(entries.hasNext()){
                 Map.Entry<Rectangle2D, Double> entry = entries.next();
                 square = entry.getKey();
                 probability = entry.getValue();
                 grid.put(square, probability*0.5); //probability decay with one half life per tick
 				
 				//Drawing on GUI
-				Graphics2D g2 = (Graphics2D) canvas.getGraphics();
+				g2.setColor(new Color((float)probability / 5, (float)0.0, (float)0.0));
 				g2.fill(square);
         }
 	printBestGuess();
 }
 
 public void printBestGuess(){
+	System.out.println("CALLED PRINTBESTGUESS");
 	Rectangle2D square = new Rectangle2D.Double(0,0,0,0);
 	double probability;
 	
