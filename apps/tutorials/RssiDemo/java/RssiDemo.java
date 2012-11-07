@@ -70,7 +70,7 @@ public class RssiDemo implements MessageListener {
   private HashMap<Rectangle2D, Double> grid;
   private HashMap<Integer, Double> sensorData = new HashMap<Integer, Double>(); //<source_node_id, rssi_dBm>
   private HashMap<Integer, Tuple<Double,Double>> nodeLocation = new HashMap<Integer, Tuple<Double,Double>>(); //<source_node_id, (x,y)>
-
+  private HashMap<Integer, Boolean> sensorSeen = new HashMap<Integer, Boolean>();
   private int readings_since_tick = 0;
 	
 	private JPanel canvas; //GUI
@@ -109,7 +109,8 @@ public class RssiDemo implements MessageListener {
     checkExistence(source);
     sensorData.put(source, rssi_dbm);
     readings_since_tick++;
-    if(readings_since_tick>4){ //kind of arbitrary; but I'll have around 4 nodes
+    sensorSeen.put(source, true);
+    if(!sensorSeen.containsValue(false)){
       tick();
       Iterator<Map.Entry<Integer, Double>> entries = sensorData.entrySet().iterator();
       while(entries.hasNext()){
@@ -184,10 +185,16 @@ public class RssiDemo implements MessageListener {
 
 public void tick(){
 	System.out.println("Tick!");
-		Rectangle2D square;
-		double probability;
+	Rectangle2D square;
+	double probability;
 		
         readings_since_tick=0;
+	Iterator<Map.Entry<Integer, Boolean>> sensors = sensorSeen.entrySet().iterator();
+        while(sensors.hasNext()){
+          Map.Entry<Integer, Boolean> entry = sensors.next();
+          entry.setValue(false);
+        }
+
         Iterator<Map.Entry<Rectangle2D, Double>> entries = grid.entrySet().iterator();
         Graphics2D g2 = (Graphics2D) canvas.getGraphics();
 	//g2.setColor(Color.red);
@@ -195,17 +202,18 @@ public void tick(){
                 Map.Entry<Rectangle2D, Double> entry = entries.next();
                 square = entry.getKey();
                 probability = entry.getValue();
-                grid.put(square, probability*0.5); //probability decay with one half life per tick
+                grid.put(square, probability*0.4); //probability decay with one half life per tick
 				
 				//Drawing on GUI
-				g2.setColor(new Color((float)probability / 5, (float)0.0, (float)0.0));
+				float redness = (float)probability / 5.0f;
+				redness=redness < 1? redness : 1; //clamp redness 
+				g2.setColor(new Color((float)probability / 6, (float)0.0, (float)0.0));
 				g2.fill(square);
         }
 	printBestGuess();
 }
 
 public void printBestGuess(){
-	System.out.println("CALLED PRINTBESTGUESS");
 	Rectangle2D square = new Rectangle2D.Double(0,0,0,0);
 	double probability;
 	
@@ -259,8 +267,10 @@ public double rssiConvert(double rssi){
 
 public void addSensorReading(double x, double y, double rssiRangeInches){
 	double variance = gridSizeInches/2;
-        Shape minCircle = new Ellipse2D.Double(x,y, rssiRangeInches-variance, rssiRangeInches-variance);
-        Shape maxCircle = new Ellipse2D.Double(x,y, rssiRangeInches+variance, rssiRangeInches+variance);
+	double radius = (rssiRangeInches-variance) / 2.0;
+        Shape minCircle = new Ellipse2D.Double(x-radius,y-radius, rssiRangeInches-variance, rssiRangeInches-variance);
+	radius = (rssiRangeInches+variance) / 2.0;
+        Shape maxCircle = new Ellipse2D.Double(x-radius,y-radius, rssiRangeInches+variance, rssiRangeInches+variance);
 
         Area rangeDonut = new Area(maxCircle);
         rangeDonut.subtract(new Area(minCircle));
