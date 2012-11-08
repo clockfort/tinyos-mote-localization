@@ -267,6 +267,8 @@ public double rssiConvert(double rssi){
 
 public void addSensorReading(double x, double y, double rssiRangeInches){
 	double variance = gridSizeInches/2;
+	// Radius shenanigans is due to java.awt not drawing circles based on x,y as center,
+	// but rather as the coordinates of the upper left of a bounding rectangle of the ellipse
 	double radius = (rssiRangeInches-variance) / 2.0;
         Shape minCircle = new Ellipse2D.Double(x-radius,y-radius, rssiRangeInches-variance, rssiRangeInches-variance);
 	radius = (rssiRangeInches+variance) / 2.0;
