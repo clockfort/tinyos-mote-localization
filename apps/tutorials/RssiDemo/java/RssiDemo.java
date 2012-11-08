@@ -136,12 +136,12 @@ public class RssiDemo implements MessageListener {
 	JFrame frame = new JFrame();
 	class DrawPanel extends JPanel {
 		public void paintComponent(Graphics g) {
-			g.fillRect(0, 0, 360, 240);
+			g.fillRect(0, 0, roomSizeInchesX, roomSizeInchesY);
 		}
 	}
 	//Canvas
 	canvas = new DrawPanel();
-	canvas.setPreferredSize(new Dimension(360,240));
+	canvas.setPreferredSize(new Dimension(roomSizeInchesX, roomSizeInchesY));
 	frame.add(canvas);
 	
 	//Frame Properties
@@ -230,7 +230,7 @@ public void printBestGuess(){
 			best = square;
 		}
         }
-	System.err.println("Best guess is currently: (" + square.getX() +", "+ square.getY() +") @ P="+max_probability);
+	System.err.println("Best guess is currently: (" + best.getX() +", "+ best.getY() +") @ P="+max_probability);
 }
 /**
  * This really ought to be an exponential, but real-life testing
